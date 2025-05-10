@@ -34,20 +34,20 @@ func TestErrorAttr(t *testing.T) {
 
 func TestLoggerMethodsCalled(t *testing.T) {
 	r := require.New(t)
-	
+
 	// create mock logger
 	logger := &mockLogger{}
-	
+
 	// call methods
 	logger.Info("info message")
 	logger.Warn("warn message")
 	logger.Error("error message")
-	
+
 	// verify calls were recorded
 	r.Equal(1, logger.infoCalls)
 	r.Equal(1, logger.warnCalls)
 	r.Equal(1, logger.errorCalls)
-	
+
 	// verify messages were stored
 	r.Equal(3, len(logger.msgs))
 	r.Equal("info message", logger.msgs[0])
