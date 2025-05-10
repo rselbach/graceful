@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"slices"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,13 +34,11 @@ type mockLogger struct {
 	msgs       []string
 }
 
-func (m *mockLogger) Info(msg string, args ...any)  { m.infoCalls++; m.msgs = append(m.msgs, msg) }
-func (m *mockLogger) Warn(msg string, args ...any)  { m.warnCalls++; m.msgs = append(m.msgs, msg) }
-func (m *mockLogger) Error(msg string, args ...any) { m.errorCalls++; m.msgs = append(m.msgs, msg) }
+func (m *mockLogger) Info(msg string, _ ...any)  { m.infoCalls++; m.msgs = append(m.msgs, msg) }
+func (m *mockLogger) Warn(msg string, _ ...any)  { m.warnCalls++; m.msgs = append(m.msgs, msg) }
+func (m *mockLogger) Error(msg string, _ ...any) { m.errorCalls++; m.msgs = append(m.msgs, msg) }
 
 func TestNew(t *testing.T) {
-	r := require.New(t)
-
 	tests := map[string]struct {
 		options  []Option
 		expected Options
@@ -78,6 +78,8 @@ func TestNew(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			r := require.New(t)
+
 			handler := &mockHandler{}
 			server := New(handler, tc.options...)
 
@@ -120,7 +122,7 @@ func TestServerShutdownProgrammatic(t *testing.T) {
 	r := require.New(t)
 
 	// create a test server that just idles
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -192,9 +194,15 @@ func TestHttpServerConfiguration(t *testing.T) {
 	r.Equal(8*time.Second, server.httpServer.ReadHeaderTimeout)
 
 	// verify that BaseContext propagation works
-	listener, err := net.Listen("tcp", ":0")
+	// Using 127.0.0.1 instead of all interfaces for security (gosec)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	r.NoError(err)
-	defer listener.Close()
+	defer func() {
+		err := listener.Close()
+		if err != nil {
+			t.Logf("failed to close listener: %v", err)
+		}
+	}()
 
 	baseCtx := server.httpServer.BaseContext(listener)
 	r.Equal(ctx, baseCtx)
@@ -256,12 +264,6 @@ func TestContextCancellationHandling(t *testing.T) {
 	r.True(foundCancellationMsg, "should log base context cancellation")
 
 	// check that the successful shutdown message was logged
-	foundShutdownMsg := false
-	for _, msg := range logger.msgs {
-		if msg == "Server gracefully shut down." {
-			foundShutdownMsg = true
-			break
-		}
-	}
+	foundShutdownMsg := slices.Contains(logger.msgs, "Server gracefully shut down.")
 	r.True(foundShutdownMsg, "should log successful shutdown")
 }

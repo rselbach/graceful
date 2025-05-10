@@ -1,3 +1,6 @@
+// Package graceful provides a wrapper for the standard http.Server with graceful
+// shutdown capabilities. It handles OS signals and context cancellation
+// to ensure that in-flight requests can complete before the server exits.
 package graceful
 
 import (

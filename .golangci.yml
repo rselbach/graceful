@@ -1,0 +1,89 @@
+# golangci-lint configuration
+# See: https://golangci-lint.run/usage/configuration/
+
+# Config for golangci-lint v2.x
+version: "2"
+
+run:
+  # Timeout for analysis, e.g. 30s, 5m
+  timeout: 5m
+  
+  # Skip auto-generated files
+  skip-files:
+    - ".*\\.pb\\.go$"
+
+  # Exit with error code 1 on any issue found
+  issues-exit-code: 1
+  
+  # Skip by default for generated files
+  skip-dirs-use-default: true
+  
+  # Analyze test files
+  tests: true
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+linters:
+  # Use all default linters
+  preset: default
+  
+  # Additionally enable these linters
+  enable:
+    - gocritic        # Static analysis checks
+    - misspell        # Check for misspellings
+    - revive          # Replacement for golint
+    - prealloc        # Slice preallocation
+    - gosec           # Security checks
+    - unconvert       # Remove unnecessary type conversions
+    - govet           # Reports suspicious constructs
+    - gocyclo         # Cyclomatic complexity checks
+    - dupl            # Code duplication
+    
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  govet:
+    check-shadowing: true
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  gocyclo:
+    min-complexity: 15
+  misspell:
+    locale: US
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+  dupl:
+    threshold: 100
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - gosec
+        - dupl
+        
+  # Don't show issues for specific cases
+  exclude:
+    - G104            # Ignore "Errors unhandled" in test files
+    - SA5001          # Ignore "should check errors from defer calls" warnings
+    - "comment on exported"  # Common style false positive
+
+  # Set to true to include automatic fixes to problems
+  fix: true
